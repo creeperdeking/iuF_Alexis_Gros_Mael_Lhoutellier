@@ -6,7 +6,7 @@ using Intel.RealSense;
 namespace iuF_Alexis_Gros_Mael_Lhoutellier
 {
     /// Ouvre un flux camera
-    class RealSenseReader
+    public class RealSenseReader
     {
         public const int CAMERA_WIDTH = 640;
         public const int CAMERA_HEIGHT = 480;
@@ -46,7 +46,7 @@ namespace iuF_Alexis_Gros_Mael_Lhoutellier
             Console.WriteLine("Reading from Device");
         }
 
-        private Config FromFile(this Config cfg, string file) {
+        private Config FromFile(Config cfg, string file) {
             cfg.EnableDeviceFromFile(file, repeat: false);
             return cfg; 
         }
@@ -54,49 +54,47 @@ namespace iuF_Alexis_Gros_Mael_Lhoutellier
         private void SetupFilePipeline(String fileName)
         {
             pipeline = new Pipeline();
-            using (var cfg = FromFile(new Config(), fileName))
-            using (var pp = pipeline.Start(cfg))
-            using (var dev = pp.Device)
-            using (playback = PlaybackDevice.FromDevice(dev))
-            {
-                Console.WriteLine("Reading from : " + playback.FileName);
-                playback.Realtime = false;
-            }
+            var cfg = FromFile(new Config(), fileName);
+            var pp = pipeline.Start(cfg);
+            var dev = pp.Device;
+            playback = PlaybackDevice.FromDevice(dev);
+            
+            Console.WriteLine("Reading from : " + playback.FileName);
+            playback.Realtime = false;
         }
 
         // Attend que des frames soient disponibles puis copie leur valeurs
         // de couleur et de profondeur pour pouvoir les traiter
         public void WaitThenProcessFrame()
         {
-            using (var frames = pipeline.WaitForFrames())
-            {
-                Align align = new Align(Stream.Color).DisposeWith(frames);
-                Frame aligned = align.Process(frames).DisposeWith(frames);
-                FrameSet alignedframeset = aligned.As<FrameSet>().DisposeWith(frames);
-                var colorFrame = alignedframeset.ColorFrame.DisposeWith(alignedframeset);
-                var depthFrame = alignedframeset.DepthFrame.DisposeWith(alignedframeset);
+            var frames = pipeline.WaitForFrames();
 
-                colorFrame.CopyTo(colorArray);
-                depthFrame.CopyTo(depthArray);
-            }
+            Align align = new Align(Stream.Color).DisposeWith(frames);
+            Frame aligned = align.Process(frames).DisposeWith(frames);
+            FrameSet alignedframeset = aligned.As<FrameSet>().DisposeWith(frames);
+            var colorFrame = alignedframeset.ColorFrame.DisposeWith(alignedframeset);
+            var depthFrame = alignedframeset.DepthFrame.DisposeWith(alignedframeset);
+
+            colorFrame.CopyTo(colorArray);
+            depthFrame.CopyTo(depthArray);
         }
 
-        public Tuple<byte[], UInt16> getPixelInfos(int posX, int posY, byte[] colorArray, UInt16[] depthArray)
+        public Tuple<byte[], UInt16> GetPixelInfos(int posX, int posY)
         {
-            var color = getColor(posX, posY, colorArray);
-            var depth = getDepth(CAMERA_WIDTH / 2, CAMERA_HEIGHT / 2, depthArray);
+            var color = GetColor(posX, posY);
+            var depth = GetDepth(CAMERA_WIDTH / 2, CAMERA_HEIGHT / 2);
 
             return new Tuple<byte[], ushort>(color, depth);
         }
 
         // renvoie un tableau avec les composantes r,g,b du pixel demandé
-        public byte[] getColor(int posX, int posY, byte[] colorArray)
+        public byte[] GetColor(int posX, int posY)
         {
             int index = (posX + (posY * CAMERA_WIDTH)) * 3;
             return new byte[] { colorArray[index], colorArray[index + 1], colorArray[index + 2] };
         }
 
-        public UInt16 getDepth(int posX, int posY, UInt16[] depthArray)
+        public UInt16 GetDepth(int posX, int posY)
         {
             int index = posX + (posY * CAMERA_WIDTH);
             return depthArray[index];
