@@ -41,8 +41,8 @@ namespace iuF_Alexis_Gros_Mael_Lhoutellier
             cfg.EnableStream(Stream.Depth, CAMERA_WIDTH, CAMERA_HEIGHT, Format.Z16, FPS);
             cfg.EnableStream(Stream.Color, CAMERA_WIDTH, CAMERA_HEIGHT, Format.Rgb8, FPS);
 
-            var pipe = new Pipeline();
-            pipe.Start(cfg);
+            pipeline = new Pipeline();
+            pipeline.Start(cfg);
             Console.WriteLine("Reading from Device");
         }
 
@@ -67,16 +67,17 @@ namespace iuF_Alexis_Gros_Mael_Lhoutellier
         // de couleur et de profondeur pour pouvoir les traiter
         public void WaitThenProcessFrame()
         {
-            var frames = pipeline.WaitForFrames();
+            using (var frames = pipeline.WaitForFrames())
+            {
+                Align align = new Align(Stream.Color).DisposeWith(frames);
+                Frame aligned = align.Process(frames).DisposeWith(frames);
+                FrameSet alignedframeset = aligned.As<FrameSet>().DisposeWith(frames);
+                var colorFrame = alignedframeset.ColorFrame.DisposeWith(alignedframeset);
+                var depthFrame = alignedframeset.DepthFrame.DisposeWith(alignedframeset);
 
-            Align align = new Align(Stream.Color).DisposeWith(frames);
-            Frame aligned = align.Process(frames).DisposeWith(frames);
-            FrameSet alignedframeset = aligned.As<FrameSet>().DisposeWith(frames);
-            var colorFrame = alignedframeset.ColorFrame.DisposeWith(alignedframeset);
-            var depthFrame = alignedframeset.DepthFrame.DisposeWith(alignedframeset);
-
-            colorFrame.CopyTo(colorArray);
-            depthFrame.CopyTo(depthArray);
+                colorFrame.CopyTo(colorArray);
+                depthFrame.CopyTo(depthArray);
+            }
         }
 
         public Tuple<byte[], UInt16> GetPixelInfos(int posX, int posY)
@@ -98,6 +99,12 @@ namespace iuF_Alexis_Gros_Mael_Lhoutellier
         {
             int index = posX + (posY * CAMERA_WIDTH);
             return depthArray[index];
+        }
+
+        ~RealSenseReader()
+        {
+            pipeline.Stop();
+            pipeline.Dispose();
         }
     }
 }

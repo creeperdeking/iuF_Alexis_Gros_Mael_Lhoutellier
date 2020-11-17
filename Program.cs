@@ -17,6 +17,7 @@ namespace iuF_Alexis_Gros_Mael_Lhoutellier
                 showPixelInfos(400, 300, readerFile);
             }
             Console.Clear();
+            
 
             RealSenseReader readerCam = new RealSenseReader();
             while (true)
@@ -50,7 +51,7 @@ namespace iuF_Alexis_Gros_Mael_Lhoutellier
         static void showPixelInfos(int posX, int posY, RealSenseReader reader)
         {
             var colorDepth = reader.GetPixelInfos(posX, posY);
-            //quickClear(3);
+            quickClear(3);
             Console.WriteLine("--- ("+posX+","+posY+") ---");
             showColor(colorDepth.Item1);
             showDepth(colorDepth.Item2);
