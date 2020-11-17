@@ -1,7 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading;
 using Intel.RealSense;
 
 namespace iuF_Alexis_Gros_Mael_Lhoutellier
