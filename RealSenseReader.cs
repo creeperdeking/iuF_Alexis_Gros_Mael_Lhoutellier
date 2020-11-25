@@ -5,7 +5,7 @@ using Intel.RealSense;
 
 namespace iuF_Alexis_Gros_Mael_Lhoutellier
 {
-    /// Ouvre un flux camera
+    /// Ouvre un flux camera et permet d'accéder aux données de la frame courante
     public class RealSenseReader
     {
         public const int CAMERA_WIDTH = 640;
@@ -15,15 +15,13 @@ namespace iuF_Alexis_Gros_Mael_Lhoutellier
 
         private Pipeline pipeline;
         private PlaybackDevice playback;
-        public PlaybackStatus GetPlaybackDeviceStatus()
-        {
-            return playback.Status;
-        }
 
         // Stocke des valeurs de couleur et de profondeur de la dernière frame
         private byte[] colorArray = new byte[CAMERA_WIDTH * CAMERA_HEIGHT * 3];
-        private UInt16[] depthArray = new UInt16[CAMERA_WIDTH * CAMERA_HEIGHT];
+        private ushort[] depthArray = new ushort[CAMERA_WIDTH * CAMERA_HEIGHT];
+        private float[] verticesArray = new float[CAMERA_WIDTH * CAMERA_HEIGHT * 3];
 
+        // Si le nom du fichier n'es pas vide, on lit à partir d'un fichier, sinon, on lit à partir de la caméra
         public RealSenseReader(String fileName="")
         {
             if (fileName == "")
@@ -34,7 +32,14 @@ namespace iuF_Alexis_Gros_Mael_Lhoutellier
                 SetupFilePipeline(fileName);
             }
         }
+           
+        // Permet d'accéder depuis l'extérieur au status du playback pour savoir quand arrêter de demander des frames
+        public PlaybackStatus GetPlaybackDeviceStatus()
+        {
+            return playback.Status;
+        }
 
+        // Met en place un pipeline à partir d'un device realsense
         private void SetupDevicePipeline()
         {
             var cfg = new Config();
@@ -46,15 +51,17 @@ namespace iuF_Alexis_Gros_Mael_Lhoutellier
             Console.WriteLine("Reading from Device");
         }
 
-        private Config FromFile(Config cfg, string file) {
+        // Crée une configuration à partir d'un fichier
+        private Config ConfigFromFile(Config cfg, string file) {
             cfg.EnableDeviceFromFile(file, repeat: false);
             return cfg; 
         }
 
+        // Met en place un pipeline à partir d'un fichier
         private void SetupFilePipeline(String fileName)
         {
             pipeline = new Pipeline();
-            var cfg = FromFile(new Config(), fileName);
+            var cfg = ConfigFromFile(new Config(), fileName);
             var pp = pipeline.Start(cfg);
             var dev = pp.Device;
             playback = PlaybackDevice.FromDevice(dev);
@@ -77,15 +84,19 @@ namespace iuF_Alexis_Gros_Mael_Lhoutellier
 
                 colorFrame.CopyTo(colorArray);
                 depthFrame.CopyTo(depthArray);
+                Points points = (new PointCloud()).Process<VideoFrame>(depthFrame).As<Points>();
+                points.CopyVertices(verticesArray);
             }
         }
 
-        public Tuple<byte[], UInt16> GetPixelInfos(int posX, int posY)
+        // Donne toutes les informations disponible sur un pixel
+        public Tuple<byte[], ushort, float[]> GetPixelInfos(int posX, int posY)
         {
             var color = GetColor(posX, posY);
-            var depth = GetDepth(CAMERA_WIDTH / 2, CAMERA_HEIGHT / 2);
+            var depth = GetDepth(posX, posY);
+            var coord = GetVertice(posX, posY);
 
-            return new Tuple<byte[], ushort>(color, depth);
+            return new Tuple<byte[], ushort, float[]>(color, depth, coord);
         }
 
         // renvoie un tableau avec les composantes r,g,b du pixel demandé
@@ -95,10 +106,18 @@ namespace iuF_Alexis_Gros_Mael_Lhoutellier
             return new byte[] { colorArray[index], colorArray[index + 1], colorArray[index + 2] };
         }
 
-        public UInt16 GetDepth(int posX, int posY)
+        // Donne la profondeur de ce pixel
+        public ushort GetDepth(int posX, int posY)
         {
             int index = posX + (posY * CAMERA_WIDTH);
             return depthArray[index];
+        }
+
+        // Donne les coordonnées x,y,z de ce pixel dans l'espace
+        public float[] GetVertice(int posX, int posY)
+        {
+            int index = posX + (posY * CAMERA_WIDTH);
+            return new float[] { verticesArray[index], verticesArray[index + 1], verticesArray[index + 2] };
         }
 
         ~RealSenseReader()

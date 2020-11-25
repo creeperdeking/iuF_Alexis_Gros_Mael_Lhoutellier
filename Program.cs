@@ -8,6 +8,7 @@ namespace iuF_Alexis_Gros_Mael_Lhoutellier
     {
         static void Main(string[] args)
         {
+            // On affiche d'abord la sortie depuis un fichier
             RealSenseReader readerFile = new RealSenseReader("test.bag");
             while (
                 readerFile.GetPlaybackDeviceStatus() 
@@ -17,8 +18,8 @@ namespace iuF_Alexis_Gros_Mael_Lhoutellier
                 showPixelInfos(400, 300, readerFile);
             }
             Console.Clear();
-            
 
+            // Puis directement via la caméra
             RealSenseReader readerCam = new RealSenseReader();
             while (true)
             {
@@ -31,6 +32,11 @@ namespace iuF_Alexis_Gros_Mael_Lhoutellier
         static void showColor(byte[] color)
         {
             Console.WriteLine("color: [" + color[0].ToString() + "," + color[1].ToString() + "," + color[2].ToString() + "]");
+        }
+
+        static void showCoordinates(float[] coord)
+        {
+            Console.WriteLine("coordinates: [" + coord[0].ToString() + "," + coord[1].ToString() + "," + coord[2].ToString() + "]");
         }
 
         static void showDepth(UInt16 depth)
@@ -55,6 +61,7 @@ namespace iuF_Alexis_Gros_Mael_Lhoutellier
             Console.WriteLine("--- ("+posX+","+posY+") ---");
             showColor(colorDepth.Item1);
             showDepth(colorDepth.Item2);
+            showCoordinates(colorDepth.Item3);
         }
     }
 }
