@@ -1,5 +1,5 @@
-# iuF Intel Realsense
-# Alexis Gros
+# iuF Intel Realsense Groupe Alexis Gros - Mael Lhoutellier
+# Alexis Gros - Branche alexis
 
 * Rendu partie 1:
 
